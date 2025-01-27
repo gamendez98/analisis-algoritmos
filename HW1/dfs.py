@@ -69,7 +69,9 @@ def dfs(graph):
     recursive_stack = [False]*n
     cycles = []
     def dfs_visit(u, path):
-        """"""
+        """
+        Missing Doc
+        """
         visited[u] = True
         recursive_stack[u] = True
         path.append(u)
@@ -109,7 +111,7 @@ def read_graph_from_file(input_file):
     graph = Graph()
     with open(input_file, 'r') as f:
         for line in f:
-            parts = line.strip().split()
+            parts = line.strip().split(",")
             if len(parts) != 3:  # Validate line format
                 raise ValueError(f"Invalid line format: {line.strip()}")
             vertex1, vertex2, weight = parts
