@@ -1,0 +1,14 @@
+Edge Flows:
+0 2 11
+0 1 12
+1 3 12
+1 2 0
+2 4 11
+2 1 0
+3 2 0
+3 5 19
+4 5 4
+4 3 7
+
+Total Flow: 23
+Execution Time: 0.000000 seconds

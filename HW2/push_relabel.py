@@ -57,7 +57,7 @@ class PushRelabel:
 
             #Set the flow of the edge to the max capacity
             self.flow_node_neighbours[source][v] = capacity
-            self.flow_node_neighbours[v][source] = -capacity
+            #self.flow_node_neighbours[v][source] = -capacity
 
             #Set the reverse edge to the max capacity   
             self.residual_node_neighbours[source][v] = 0 #Edge is saturated
@@ -77,8 +77,11 @@ class PushRelabel:
         flow = min(u_excess, capacity)
 
         #Update flow graph
-        self.flow_node_neighbours[u][v] += flow
-        self.flow_node_neighbours[v][u] -=  flow
+        pairs = {(a,b) for a,b,_ in self.edges}
+        if (u,v) in pairs:
+            self.flow_node_neighbours[u][v] += flow
+        else:
+            self.flow_node_neighbours[v][u] -=  flow
    
 
         #Update residual graph
@@ -114,7 +117,8 @@ class PushRelabel:
             if not pushed:
                 self.relabel(u)
                 self.active_nodes[u] = True
-        return sum(self.flow_node_neighbours[v][target] for v in self.flow_node_neighbours if target in self.flow_node_neighbours[v])
+        return sum(self.flow_node_neighbours[source].values())  # Max flow is the total outgoing flow from the source
+
 
 
     @classmethod
@@ -164,12 +168,11 @@ class PushRelabel:
         end_time = time.time()
         
         with open(output_file, "w") as f:
-            '''f.write("Edge Flows:\n")
-            for node1 in sorted(max_flow):
-                for node2, flow in max_flow[node1].items():
+            f.write("Edge Flows:\n")
+            for node1 in sorted(self.flow_node_neighbours):
+                for node2, flow in self.flow_node_neighbours[node1].items():
+                    #if flow > 0:  # Only write edges where flow was pushed
                     f.write(f"{node1} {node2} {flow}\n")
-            
-            total_flow = sum(flow for flow in max_flow[source].values())'''
             f.write(f"\nTotal Flow: {max_flow}\n")
             f.write(f"Execution Time: {end_time - start_time:.6f} seconds\n")
 
