@@ -215,6 +215,6 @@ if __name__ == "__main__":
     source = 0  # First node is source
     target = max(graph.nodes)  # Last node is target
     
-    graph.write_output(output_file, source, target)
+    # graph.write_output(output_file, source, target)
     graph.plot_graph_with_flow(source, target)
     print(f"Results written to {output_file}")
