@@ -1,5 +1,3 @@
-# python program to implement push-relabel algorithm for 
-# getting maximum flow of graph 
 class Edge: 
     
     def __init__(self, flow, capacity, u, v):
@@ -166,24 +164,21 @@ class Graph:
 
     
 # Driver program to test above functions 
-V = 6; 
+V = 100; 
 g = Graph(V);
 
-# Creating above shown flow network 
-g.addEdge(0, 1, 16); 
-g.addEdge(0, 2, 13); 
-g.addEdge(1, 2, 10); 
-g.addEdge(2, 1, 4); 
-g.addEdge(1, 3, 12); 
-g.addEdge(2, 4, 14); 
-g.addEdge(3, 2, 9); 
-g.addEdge(3, 5, 20); 
-g.addEdge(4, 3, 7); 
-g.addEdge(4, 5, 4);
+with open("red_100_d.txt", 'r') as f:
+    lines = f.readlines()
+    for line in lines[1:]:
+        parts = line.strip().split()
+        if len(parts) != 3:
+            raise ValueError(f"Invalid line format: {line.strip()}")
+        node1, node2, weight = map(int, parts)
+        g.addEdge(node1, node2, weight)
 
 # Initialize source and sink 
 s = 0
-t = 5; 
+t = 99; 
 
 print("Maximum flow is ",  g.getMaxFlow(s, t));
 
