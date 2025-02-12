@@ -257,14 +257,13 @@ class PushRelabelGraph:
 
         return self.vertices[t].e
 
-    
     def structure_output(self, source, target):
         """
         Structures the flow network result into a readable string.
 
         Args:
-            source (str): The source node.
-            target (str): The target node.
+            source (int): The source node.
+            target (int): The target node.
 
         Returns:
             str: The formatted output with edge flows and execution time.
@@ -272,15 +271,21 @@ class PushRelabelGraph:
         start_time = time.time()
         max_flow = self.push_relabel(source, target)
         end_time = time.time()
-        s = "Edge Flows:\n"
-        for node1 in sorted(self.flow_node_neighbours):
-            for node2 in sorted(self.flow_node_neighbours[node1]):
-                flow = self.flow_node_neighbours[node1][node2]
-                if flow > 0:
-                    s += f"{node1} {node2} {flow}\n"
-        s += f"\nMaximum Flow: {max_flow}\n"
-        s += f"Execution Time: {end_time - start_time:.6f} seconds\n"
-        return s
+
+        output = "Edge Flows:\n"
+
+        # Iterate over adjacency list to print flow values
+        for u in sorted(self.adj):
+            for v in sorted(self.adj[u]):
+                flow = self.adj[v][u]  # Flow is stored in reverse edges
+                if flow > 0:  # Only print edges where flow was actually pushed
+                    output += f"{u} {v} {flow}\n"
+
+        output += f"\nMaximum Flow: {max_flow}\n"
+        output += f"Execution Time: {end_time - start_time:.6f} seconds\n"
+        
+        return output
+
     
 def read_graph_from_file_push_relabel(input_file):
         """
@@ -340,11 +345,9 @@ def run_algorithms(input_file, output_file):
     #Push-Relabel
     edges, V = read_graph_from_file_push_relabel(input_file)
     graph_push_relabel = PushRelabelGraph(int(V))
-    print(V)
     for edge in edges:
         graph_push_relabel.addEdge(edge[0], edge[1], edge[2])
-    push_relable_max_flow = graph_push_relabel.push_relabel(0, int(V-1))
-    #pr_output = graph_push_relabel.structure_output("0", str(max(int(node) for node in graph_push_relabel.nodes)))
+    pr_output = graph_push_relabel.structure_output(0, int(V-1))
     
     with open(output_file, "w") as f:
         f.write("Algorithm Results:\n\n")
@@ -352,7 +355,7 @@ def run_algorithms(input_file, output_file):
         f.write(ek_output)
         f.write("\n")
         f.write("Push-Relabel Algorithm\n")
-        f.write(str(push_relable_max_flow))
+        f.write(pr_output)
     
     print(f"Results written to {output_file}")
 
