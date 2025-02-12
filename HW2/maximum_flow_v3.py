@@ -178,6 +178,10 @@ class EdmondsKarpGraph:
         return s
     
 class Edge:
+    """
+    Class representing an edge in a flow network.
+    As per the problem, each edge has a flow, capacity, and vertices u (origin vertex) and v (destiny vertex).
+    """
 
     def __init__(self, flow, capacity, u, v):
         self.flow = flow
@@ -186,6 +190,10 @@ class Edge:
         self.v = v
 
 class Vertex:
+    """
+    Class representing a vertex in a flow network.
+    As per the problem, each vertex has a height h and excess flow e.
+    """
 
     def __init__(self, h, e):
         self.h = h
@@ -197,6 +205,12 @@ class PushRelabelGraph:
     the the push-relabel algorithm.
     """
     def __init__(self, num_vertices):
+        """
+        Initializes the graph with a number of vertices.
+
+        Args:
+            num_vertices (int): The number of vertices in the graph.
+        """
         self.num_vertices = num_vertices
         self.edges = []
         self.vertices = []
@@ -206,11 +220,21 @@ class PushRelabelGraph:
             self.vertices.append(Vertex(0, 0))
     
     def addEdge(self, u, v, capacity):
-        #flow is initialized with 0 for all edges
+        """
+        Adds an edge to the flow network.
+
+        Args:
+            u (int): The origin vertex.
+            v (int): The destiny vertex.
+            capacity (int): The capacity of the edge.
+        """
+        #Flow is initialized with 0 for all edges
         self.edges.append(Edge(0, capacity, u, v))
 
     def nextFlowVertex(self):
-        #Might create a data structrure that only holds the excess nodes
+        """
+        Finds the next vertex with excess flow.
+        """
 
         for i in range(1, self.num_vertices - 1):
             if self.vertices[i].e > 0:
@@ -219,88 +243,122 @@ class PushRelabelGraph:
         return -1
 
     def init_preflow(self, s):
+        """
+        Initializes the preflow with the source vertex.
 
+        Args:
+            s (int): The source vertex.
+        """
+        #Making h of source Vertex equal to no. of vertices
         self.vertices[s].h = len(self.vertices)
 
         for i  in range(len(self.edges)):
-
+            #If current edge goes from source
             if self.edges[i].u == s:
-
+                #Flow is equal to capacity
                 self.edges[i].flow = self.edges[i].capacity
-
+                #Initialize excess flow for adjacent v equal to the flow, equal to the capacity of the edge s->v
                 self.vertices[self.edges[i].v].e += self.edges[i].flow
-
+                #Add an edge from v to s in residual graph with capacity equal to 0 and flow equal to -flow
                 self.edges.append(Edge(-self.edges[i].flow, 0, self.edges[i].v, s))
 
     def updateReverseFlow(self, i, flow):
-
+        """
+        Updates the reverse flow of an edge in the residual graph.
+        
+        Args:
+            i (int): The index of the edge.
+            flow (int): The flow to be subtracted from the reverse edge.
+        """
+        #The initial vertex is now the final vertex of the edge and vice versa
         initial = self.edges[i].v
         final = self.edges[i].u
         found = False
         j = 0
         while j < len(self.edges) and found == False:  
+            #If the reverse edge already exists, subtract the flow from it
             if (self.edges[j].v == final and self.edges[j].u == initial):
                 self.edges[j].flow -= flow
                 found = True
             j +=1
         if found == False:
-            # adding reverse Edge in residual graph 
+            # Adding reverse Edge in residual graph 
             e = Edge(0, flow, initial, final)
             self.edges.append(e)
     
     def push(self, u):
+        """
+        Pushes excess flow from a vertex to a neighboring vertex.
+        
+        Args:
+            u (int): The vertex with excess flow.   
+        """
 
         for i in range(len(self.edges)):
-
+            #If the edge starts at the vertex u
             if self.edges[i].u == u:
-
+                #If the edge is already at full capacity, continue
                 if self.edges[i].flow == self.edges[i].capacity:
                     continue
-
+                #If the height of the vertex u is equal to the height of the vertex v + 1
                 if self.vertices[u].h == self.vertices[self.edges[i].v].h + 1:
-
+                    #The flow is the minimum between the excess flow of the vertex u and the capacity of the edge
                     flow = min(self.vertices[u].e, self.edges[i].capacity - self.edges[i].flow)
-
+                    #The excess flow of the vertex u is decreased by the flow
                     self.vertices[u].e -= flow
-
+                    #The excess flow of the vertex v is increased by the flow
                     self.vertices[self.edges[i].v].e += flow
-
+                    #The flow of the edge is increased by the flow
                     self.edges[i].flow += flow
-
+                    #The reverse flow is updated
                     self.updateReverseFlow(i, flow)
 
                     return True
         return False
     
     def relabel(self, u):
+        """
+        Relabels the height of a vertex to the minimum height of its neighbors plus one.
+        
+        Args:
+            u (int): The vertex to be relabeled.
+        """
         
         min_height = float('inf')
 
         for i in range(len(self.edges)):
-
+            #If the edge starts at the vertex u
             if self.edges[i].u == u:
-
+                #If the edge is already at full capacity, continue
                 if self.edges[i].flow == self.edges[i].capacity:
                     continue
-
+                #If the height of the vertex v is less than the minimum height, update minimun height
                 if self.vertices[self.edges[i].v].h < min_height:
                     min_height = self.vertices[self.edges[i].v].h
-
+        #Relabel vertex u
         self.vertices[u].h = min_height + 1
     
-    def push_relabel(self, s, t):
+    def push_relabel(self, s, t):   
+        """
+        Implements the push-relabel algorithm to compute the maximum flow.
+        
+        Args:
+            s (int): The source vertex.
+            t (int): The target vertex.
+        """
 
+        #Starts the preflow
         self.init_preflow(s)
-
+        #Finds the next vertex with excess flow
         u = self.nextFlowVertex()
 
         while u != -1:
-
+            #If no push is possible, relabel the vertex
             if not self.push(u):
                 self.relabel(u)
-
+            #Finds the next vertex with excess flow
             u = self.nextFlowVertex()
-
+        
         return self.vertices[t].e
     
     def structure_output(self, source, target):
@@ -318,18 +376,17 @@ class PushRelabelGraph:
         max_flow = self.push_relabel(source, target)
         end_time = time.time()
         s = "Edge Flows:\n"
-        for node1 in sorted(self.flow_node_neighbours):
-            for node2 in sorted(self.flow_node_neighbours[node1]):
-                flow = self.flow_node_neighbours[node1][node2]
-                if flow > 0:
-                    s += f"{node1} {node2} {flow}\n"
+        for node1 in self.edges:
+            if node1.capacity > 0:
+                if node1.flow > 0:
+                    s += f"{node1.u} {node1.v} {node1.flow}\n"
         s += f"\nMaximum Flow: {max_flow}\n"
         s += f"Execution Time: {end_time - start_time:.6f} seconds\n"
         return s
     
 def read_graph_from_file_push_relabel(input_file):
         """
-        Reads graph edges from a .in file.
+        Reads graph edges from a .in file for the push relabel algorithm.
 
         Args:
             input_file (str): The path to the input file.
@@ -388,7 +445,7 @@ def run_algorithms(input_file, output_file):
     print(V)
     for edge in edges:
         graph_push_relabel.addEdge(edge[0], edge[1], edge[2])
-    push_relable_max_flow = graph_push_relabel.push_relabel(0, int(V-1))
+    push_relable_output = graph_push_relabel.structure_output(0, int(V-1))
     #pr_output = graph_push_relabel.structure_output("0", str(max(int(node) for node in graph_push_relabel.nodes)))
     
     with open(output_file, "w") as f:
@@ -397,7 +454,7 @@ def run_algorithms(input_file, output_file):
         f.write(ek_output)
         f.write("\n")
         f.write("Push-Relabel Algorithm\n")
-        f.write(str(push_relable_max_flow))
+        f.write(push_relable_output)
     
     print(f"Results written to {output_file}")
 

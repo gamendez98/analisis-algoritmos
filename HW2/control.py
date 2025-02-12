@@ -164,10 +164,10 @@ class Graph:
 
     
 # Driver program to test above functions 
-V = 100; 
+V = 200; 
 g = Graph(V);
 
-with open("red_100_d.txt", 'r') as f:
+with open("red_200_d.txt", 'r') as f:
     lines = f.readlines()
     for line in lines[1:]:
         parts = line.strip().split()
@@ -178,8 +178,9 @@ with open("red_100_d.txt", 'r') as f:
 
 # Initialize source and sink 
 s = 0
-t = 99; 
+t = 199; 
 
+#63875
 print("Maximum flow is ",  g.getMaxFlow(s, t));
 
 # The code is contributed by Arushi goel. 

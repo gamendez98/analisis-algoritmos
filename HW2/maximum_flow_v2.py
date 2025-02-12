@@ -310,6 +310,8 @@ class PushRelabelGraph:
         s += f"\nMaximum Flow: {max_flow}\n"
         s += f"Execution Time: {end_time - start_time:.6f} seconds\n"
         return s
+    def write_output(self):
+        pass
     
 def read_graph_from_file_push_relabel(input_file):
         """
