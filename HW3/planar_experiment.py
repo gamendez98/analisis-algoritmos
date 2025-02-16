@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from generating_graphs import generate_planar_graph
 from tqdm import tqdm
 
-def experiment_planarity_threshold(num_nodes=20, max_edges=100, trials_per_edge=10000):
+def experiment_planarity_threshold(num_nodes=20, max_edges=70, trials_per_edge=1000):
     """ Experiment to find the threshold for planarity """
 
     # Theoretical limit for planarity 
@@ -16,7 +16,7 @@ def experiment_planarity_threshold(num_nodes=20, max_edges=100, trials_per_edge=
         planar_count = 0
         
         for _ in range(trials_per_edge):
-            G, _ = generate_planar_graph(num_nodes, num_edges)
+            G, _ = generate_planar_graph(num_nodes, num_edges, verbose=False)
             if G.number_of_edges() == num_edges and nx.is_planar(G):
                 planar_count += 1
         
