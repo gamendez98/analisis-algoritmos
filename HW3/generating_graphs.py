@@ -95,5 +95,5 @@ if __name__ == "__main__":
     is_planar, _ = nx.check_planarity(G)
     print(f"Is the generated graph planar? {is_planar}")
     print(f"The generated graph has {G.number_of_edges()} edges.")
-    save_graph_csv(G, num_nodes, num_edges)
+    save_graph_csv(G, num_nodes)
     plot_graph(G)
