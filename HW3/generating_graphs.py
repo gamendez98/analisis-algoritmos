@@ -2,6 +2,7 @@ import random
 import networkx as nx
 import matplotlib.pyplot as plt
 from scipy.spatial import Delaunay
+from datetime import datetime
 
 def generate_planar_graph(num_nodes, num_edges, max_trials=1000, ensure_connectivity=False, verbose = True):
     """  Generates a random planar graph with num_nodes nodes and num_edges edges. """
@@ -76,9 +77,10 @@ def plot_graph(G):
     plt.title("Random Planar Graph")
     plt.show()
 
-def save_graph_csv(G, num_nodes, num_edges):
+def save_graph_csv(G, num_nodes):
     """ Saves the graph as a CSV file """
-    filename = f"planar_graph_{num_nodes}nodes_{num_edges}edges.csv"
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"planar_graph_{num_nodes}nodes_{G.number_of_edges()}edges_{timestamp}.csv"
     with open(filename, "w") as f:
         f.write("Source,Target\n")
         for edge in G.edges():
@@ -87,7 +89,7 @@ def save_graph_csv(G, num_nodes, num_edges):
 
 if __name__ == "__main__":
     num_nodes = 20
-    num_edges = 30  
+    num_edges = 25  
     G, points = generate_planar_graph(num_nodes, num_edges, ensure_connectivity=True)
 
     is_planar, _ = nx.check_planarity(G)
