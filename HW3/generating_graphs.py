@@ -1,14 +1,15 @@
 import random
+import argparse
 import networkx as nx
 import matplotlib.pyplot as plt
 from scipy.spatial import Delaunay
 from datetime import datetime
 
-def generate_planar_graph(num_nodes, num_edges, max_trials=1000, ensure_connectivity=False, verbose = True):
+def generate_planar_graph(num_nodes, num_edges, max_trials=1000, ensure_connectivity=False, verbose = False):
     """  Generates a random planar graph with num_nodes nodes and num_edges edges. """
 
     # Check if the required number of edges is sufficient for connectivity
-    # Raises Value Error if not. We could change this if we want.
+    # Raises Value Error if not.
     if num_edges < num_nodes - 1:
         raise ValueError("The number of edges must be at least num_nodes - 1 to ensure connectivity.")
     
@@ -88,12 +89,18 @@ def save_graph_csv(G, num_nodes):
     print(f"Graph saved as {filename}")
 
 if __name__ == "__main__":
-    num_nodes = 20
-    num_edges = 25  
-    G, points = generate_planar_graph(num_nodes, num_edges, ensure_connectivity=True)
-
+    parser = argparse.ArgumentParser(description="Generate a random planar graph.")
+    parser.add_argument("num_nodes", type=int, help="Number of nodes in the graph")
+    parser.add_argument("num_edges", type=int, help="Number of edges in the graph")
+    parser.add_argument("--max_trials", type=int, default=1000, help="Maximum number of trials for edge placement (default: 1000)")
+    parser.add_argument("--ensure_connectivity", action="store_true", help="Ensure the graph is connected")
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+    args = parser.parse_args()
+    
+    G, points = generate_planar_graph(args.num_nodes, args.num_edges, max_trials=args.max_trials, ensure_connectivity=args.ensure_connectivity, verbose=args.verbose)
+    
     is_planar, _ = nx.check_planarity(G)
     print(f"Is the generated graph planar? {is_planar}")
     print(f"The generated graph has {G.number_of_edges()} edges.")
-    save_graph_csv(G, num_nodes)
+    save_graph_csv(G, args.num_nodes)
     plot_graph(G)

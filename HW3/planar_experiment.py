@@ -1,3 +1,4 @@
+import argparse
 import networkx as nx
 import matplotlib.pyplot as plt
 from generating_graphs import generate_planar_graph
@@ -38,5 +39,12 @@ def plot_experiment(results):
     plt.legend()
     plt.show()
 
-results = experiment_planarity_threshold()
-plot_experiment(results)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run a planarity threshold experiment.")
+    parser.add_argument("--num_nodes", type=int, default=20, help="Number of nodes in the graph (default: 20)")
+    parser.add_argument("--max_edges", type=int, default=70, help="Maximum number of edges to test (default: 70)")
+    parser.add_argument("--trials_per_edge", type=int, default=1000, help="Number of trials per edge count (default: 1000)")
+    args = parser.parse_args()
+    
+    results = experiment_planarity_threshold(args.num_nodes, args.max_edges, args.trials_per_edge)
+    plot_experiment(results, args.num_nodes)
