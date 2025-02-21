@@ -11,6 +11,7 @@ def calculate_worst_case_entropy(vocab_size):
     return math.log2(vocab_size)
 
 def expected_bits(probabilities, code_lengths):
+    """Compute the expected bits per symbol using probability and code lengths."""
     return sum(p * l for p, l in zip(probabilities, code_lengths))
 
 def shannon_fano_encoding(symbols, probabilities):
