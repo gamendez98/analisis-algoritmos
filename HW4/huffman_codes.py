@@ -58,8 +58,6 @@ def show_tree(root):
     print_tree(root)
 
 
-
-
 def main():
     """Main function to handle file input, encoding, compression, and decompression validation."""
     parser = argparse.ArgumentParser(description="Huffman Codes Text Compression")
