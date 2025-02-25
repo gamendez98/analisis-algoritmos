@@ -57,6 +57,10 @@ class HuffmanCode:
         if root.right != None: 
             root.right.code = root.code + '1'
             self.recursive_traverse(root.right)
+
+def calculate_worst_case_entropy(vocab_size):
+    """Calculate the worst-case entropy given the vocabulary size."""
+    return math.log2(vocab_size)
     
 def compress_text(text, codes):
     """Compress the input text using Huffman codes."""
@@ -74,6 +78,14 @@ def decompress_text(compressed_text, reverse_codes):
             buffer = ""
     
     return decoded_text
+
+def expected_bits(probabilities, codes):
+    expected_bits = 0
+    for character, prob in probabilities.items():
+        expected_bits += prob*len(codes[character])
+    return expected_bits
+
+
 
 
 def show_tree(root):
@@ -118,11 +130,21 @@ def main():
     root = huffman_code.huffman_encoding(probabilities)
     #show_tree(root)
     huffman_code.recursive_traverse(root)
-    #print("HELOO")
-    #print(huffman_code.code)
-    #print(huffman_code.reverse_code)
-    compressed_text = compress_text(text, huffman_code.code)
-    decompressed_text = decompress_text(compressed_text, huffman_code.reverse_code)
+    codes = huffman_code.code
+    reverse_codes = huffman_code.reverse_code
+    compressed_text = compress_text(text, codes)
+    decompressed_text = decompress_text(compressed_text, reverse_codes)
+
+    worst_entropy = calculate_worst_case_entropy(len(probabilities))
+    total_bits = len(compressed_text)
+    expected_bits_per_symbol = expected_bits(probabilities, codes)
+
+    print("Huffman Codes:")
+    for char, code in codes.items():
+        print(f"{repr(char)}: {code}")
+    print(f"\nWorst-case Entropy: {worst_entropy:.4f} bits")
+    print(f"Total Bits Required: {total_bits}")
+    print(f"Expected Bits per Symbol: {expected_bits_per_symbol:.4f}")
 
     assert text == decompressed_text, "Decompressed text does not match the original!"
     print("\nDecompression successful! The original text was correctly reconstructed.")
