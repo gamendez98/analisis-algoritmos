@@ -69,6 +69,7 @@ def main():
     symbols = list(probabilities.keys())
     probs = list(probabilities.values())
     codes, code_lengths = shannon_fano_encoding(symbols, probs)
+    print(codes)
     
     # Compress and decompress the text
     compressed_text = compress_text(text, codes)
