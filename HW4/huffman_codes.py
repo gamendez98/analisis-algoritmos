@@ -116,11 +116,17 @@ def main():
     probabilities = {char: count / total_chars for char, count in frequency.items()}
     huffman_code = HuffmanCode()
     root = huffman_code.huffman_encoding(probabilities)
-    show_tree(root)
+    #show_tree(root)
     huffman_code.recursive_traverse(root)
-    print("HELOO")
+    #print("HELOO")
     #print(huffman_code.code)
     #print(huffman_code.reverse_code)
+    compressed_text = compress_text(text, huffman_code.code)
+    decompressed_text = decompress_text(compressed_text, huffman_code.reverse_code)
+
+    assert text == decompressed_text, "Decompressed text does not match the original!"
+    print("\nDecompression successful! The original text was correctly reconstructed.")
+    
 
 
     
