@@ -1,9 +1,8 @@
+import argparse
 import json
 import struct
 from collections import Counter
 from queue import PriorityQueue
-
-from networkx.classes.filters import show_nodes
 
 BYTE_SIZE = 8
 
@@ -32,8 +31,6 @@ class HuffmanCode:
     def __init__(self):
         self.code = {}
         self.reverse_code = {}  # Reverse lookup table for decoding
-        self.text = text
-        self.hydrate_codes_from_text(text)
 
     def huffman_encoding(self, probabilities):
         characters_queue = PriorityQueue()
@@ -76,9 +73,9 @@ class HuffmanCode:
         root =  self.huffman_encoding(probabilities)
         return self.recursive_traverse(root)
 
-    def byte_stream(self):
+    def byte_stream(self, text):
         current_chunk = ''
-        for char in self.text:
+        for char in text:
             current_chunk += self.code[char]
             if len(current_chunk) >= BYTE_SIZE:
                 byte_int = int(current_chunk[:BYTE_SIZE], 2)
@@ -117,14 +114,12 @@ class HuffmanCode:
         hoffman.hydrate_codes_from_text(text)
         header = {'length': len(text), 'codes': hoffman.code}
         json_bytes = json.dumps(header).encode('utf-8')
-        binary_blob = b''.join([b.to_bytes(1, byteorder='big') for b in hoffman.byte_stream()])
+        binary_blob = b''.join([b.to_bytes(1, byteorder='big') for b in hoffman.byte_stream(text)])
 
         with open(out_name, 'wb') as o:
             o.write(struct.pack("I", len(json_bytes)))
             o.write(json_bytes)
             o.write(binary_blob)
-            for byte in hoffman.byte_stream():
-                o.write(byte.to_bytes(1, byteorder='big'))
 
     @classmethod
     def decompress(cls, file_name, out_name):
@@ -162,11 +157,18 @@ def make_tree(codes):
 
 
 if __name__ == "__main__":
-    with open('HW4/test1.txt', 'r') as file:
-        text = file.read()
-    HuffmanCode.compress('HW4/test1.txt', 'HW4/test1.huff')
-    print(HuffmanCode.decompress('HW4/test1.huff', 'HW4/test1_decompressed.txt'))
+    parser = argparse.ArgumentParser(description="Huffman file compressor and decompressor.")
+    parser.add_argument(
+        "mode", choices=["compress", "decompress"], help="Mode of operation: 'compress' or 'decompress'."
+    )
+    parser.add_argument("input", help="Input file path.")
+    parser.add_argument("output", help="Output file path.")
 
+    args = parser.parse_args()
 
-
-
+    if args.mode == "compress":
+        HuffmanCode.compress(args.input, args.output)
+        print(f"File compressed and saved to {args.output}")
+    elif args.mode == "decompress":
+        HuffmanCode.decompress(args.input, args.output)
+        print(f"File decompressed and saved to {args.output}")
