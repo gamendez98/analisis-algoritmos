@@ -7,8 +7,10 @@ import argparse
 from collections import Counter
 from queue import PriorityQueue
 
+
 class Node:
     """Node class for Huffman tree."""
+
     def __init__(self, symbol, probability):
         self.symbol = symbol
         self.probability = probability
@@ -16,15 +18,18 @@ class Node:
         self.right = None
         self.code = ''
         self.checked = False
+
     def show_node(self):
-        return f"Node({repr(self.symbol)}, {self.probability}, {self.checked})"   
+        return f"Node({repr(self.symbol)}, {self.probability}, {self.checked})"
 
 
 class HuffmanCode:
     """ Class for Huffman coding."""
+
     def __init__(self):
         self.code = {}
         self.reverse_code = {}  # Reverse lookup table for decoding
+
     def huffman_encoding(self, probabilities):
         characters_queue = PriorityQueue()
         count = 0
@@ -37,7 +42,7 @@ class HuffmanCode:
             if left[2].checked == True:
                 print("Abort at ", left.show_node())
             if right[2].checked == True:
-                print("Abort at ", right.show_node())    
+                print("Abort at ", right.show_node())
             left[2].checked = True
             right[2].checked = True
             new_node = Node(f"Inner node {count}", left[0] + right[0])
@@ -46,46 +51,49 @@ class HuffmanCode:
             characters_queue.put((new_node.probability, count, new_node))
             count += 1
         root = characters_queue.get()[2]
-        return root    
+        return root
+
     def recursive_traverse(self, root):
         if len(root.symbol) == 1:
             self.code[root.symbol] = root.code
-            self.reverse_code[root.code] = root.symbol 
+            self.reverse_code[root.code] = root.symbol
         if root.left != None:
             root.left.code = root.code + '0'
             self.recursive_traverse(root.left)
-        if root.right != None: 
+        if root.right != None:
             root.right.code = root.code + '1'
             self.recursive_traverse(root.right)
+
 
 def calculate_worst_case_entropy(vocab_size):
     """Calculate the worst-case entropy given the vocabulary size."""
     return math.log2(vocab_size)
-    
+
+
 def compress_text(text, codes):
     """Compress the input text using Huffman codes."""
     return ''.join(codes[char] for char in text if char in codes)
+
 
 def decompress_text(compressed_text, reverse_codes):
     """Decompress a Huffman code-encoded text back to its original form."""
     decoded_text = ""
     buffer = ""
-    
+
     for bit in compressed_text:
         buffer += bit
         if buffer in reverse_codes:
             decoded_text += reverse_codes[buffer]
             buffer = ""
-    
+
     return decoded_text
+
 
 def expected_bits(probabilities, codes):
     expected_bits = 0
     for character, prob in probabilities.items():
-        expected_bits += prob*len(codes[character])
+        expected_bits += prob * len(codes[character])
     return expected_bits
-
-
 
 
 def show_tree(root):
@@ -109,6 +117,7 @@ def show_tree(root):
             # Recursively print each child.
             for i, child in enumerate(children):
                 print_tree(child, indent, i == len(children) - 1)
+
     print_tree(root)
 
 
@@ -121,14 +130,14 @@ def main():
     # Read the input text file
     with open(args.filepath, 'r', encoding='utf-8') as file:
         text = file.read()
-    
+
     # Compute symbol frequencies and probabilities
     frequency = Counter(text)
     total_chars = sum(frequency.values())
     probabilities = {char: count / total_chars for char, count in frequency.items()}
     huffman_code = HuffmanCode()
     root = huffman_code.huffman_encoding(probabilities)
-    #show_tree(root)
+    # show_tree(root)
     huffman_code.recursive_traverse(root)
     codes = huffman_code.code
     reverse_codes = huffman_code.reverse_code
@@ -148,9 +157,7 @@ def main():
 
     assert text == decompressed_text, "Decompressed text does not match the original!"
     print("\nDecompression successful! The original text was correctly reconstructed.")
-    
 
 
-    
 if __name__ == "__main__":
     main()
