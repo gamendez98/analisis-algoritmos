@@ -153,21 +153,14 @@ def main():
 
     # Read the input text file
     with open(args.filepath, 'r', encoding='utf-8') as file:
-        text = file.read()
+        text = file.read().replace('\n', '')
     suffix_array = build_suffix_array(text)
     results = []
 
     with open(args.query, 'r', encoding='utf-8') as file:
         for line in file:
-
-            query = line.rstrip('\n')
-
-            if query == '\\n':
-                positions = binary_search(text, suffix_array, '\n')
-                results.append(('\n', positions))
-            else:
-                positions = binary_search(text, suffix_array, query.replace('\\n', '\n'))
-                results.append((query.replace('\\n', '\n'), positions))
+            positions = binary_search(text, suffix_array, line.replace('\n', ''))
+            results.append((line.replace('\n', ''), positions))
         #queries = file.read().splitlines()
     for r in results: 
         print(r)
