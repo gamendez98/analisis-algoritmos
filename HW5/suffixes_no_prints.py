@@ -194,7 +194,7 @@ def main():
 
     # Read the input text file
     with open(args.filepath, 'r', encoding='utf-8') as file:
-        text = file.read().replace('\n', '')[:10000]
+        text = file.read().replace('\n', '')
     start_build = time.time()    
     suffix_array = build_suffix_array(text)
     print("--- %s seconds to build array---" % (time.time() - start_build))
