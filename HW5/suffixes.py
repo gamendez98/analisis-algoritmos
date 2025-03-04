@@ -150,16 +150,25 @@ def main():
     parser.add_argument("query", type=str, help="Path to the file with the queries strings to search for")
     parser.add_argument("output", type=str, help="Path to the output file")
     args = parser.parse_args()
+
     # Read the input text file
     with open(args.filepath, 'r', encoding='utf-8') as file:
         text = file.read()
     suffix_array = build_suffix_array(text)
-    with open(args.query, 'r', encoding='utf-8') as file:
-        queries = file.read().splitlines()
     results = []
-    for query in queries:
-        positions = binary_search(text, suffix_array, query)
-        results.append((query, positions))
+
+    with open(args.query, 'r', encoding='utf-8') as file:
+        for line in file:
+
+            query = line.rstrip('\n')
+
+            if query == '\\n':
+                positions = binary_search(text, suffix_array, '\n')
+                results.append(('\n', positions))
+            else:
+                positions = binary_search(text, suffix_array, query.replace('\\n', '\n'))
+                results.append((query.replace('\\n', '\n'), positions))
+        #queries = file.read().splitlines()
     for r in results: 
         print(r)
         for idx in r[1]:
