@@ -209,7 +209,9 @@ def main():
 
     with open(args.output, 'w', encoding='utf-8') as file_out:
         for r in results: 
-                file_out.write(str(r) + '\n')
+            pos = "\t".join([str(i) for i in r[1]])
+            s = f"{r[0]}\t{pos}\n"
+            file_out.write(s)
 
 
 
