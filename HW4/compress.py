@@ -135,11 +135,6 @@ class HuffmanCode:
             o.write(''.join(hoffman.stream_to_text(binary_blob, text_length=length)))
 
 
-
-
-
-
-
 #%%
 
 def make_tree(codes):

@@ -96,9 +96,9 @@ def binary_search(text: str, suffix_array: List[int], query: str) -> List[int]:
     ##print(f"Text: '{text}'")
     ##print(f"Suffix Array: {suffix_array}")
     ##print(f"Suffixes in sorted order:")
-    for i, pos in enumerate(suffix_array):
-        suffix = text[pos:min(pos + 15, len(text))]  # Show first 15 chars of suffix
-        ##print(f"  {i}: [{pos}] '{suffix}{'...' if pos + 15 < len(text) else ''}'")
+    #for i, pos in enumerate(suffix_array):
+    #    suffix = text[pos:min(pos + 15, len(text))]  # Show first 15 chars of suffix
+    #    ##print(f"  {i}: [{pos}] '{suffix}{'...' if pos + 15 < len(text) else ''}'")
     
     # Binary search to find the first occurrence
     left, right = 0, n - 1
@@ -169,9 +169,9 @@ def binary_search(text: str, suffix_array: List[int], query: str) -> List[int]:
             #print(f"  New range: left={left}, right={right}")
         
         iteration += 1
-    
+
     #print(f"\nLast occurrence found at index {last_occurrence} in suffix array (position {suffix_array[last_occurrence]} in text)")
-    
+
     # Collect all positions
     #print("\n--- COLLECTING ALL POSITIONS ---")
     #print(suffix_array[first_occurrence:last_occurrence + 1])
@@ -194,7 +194,7 @@ def main():
 
     # Read the input text file
     with open(args.filepath, 'r', encoding='utf-8') as file:
-        text = file.read().replace('\n', '')
+        text = file.read().replace('\n', '')[:10000]
     start_build = time.time()    
     suffix_array = build_suffix_array(text)
     print("--- %s seconds to build array---" % (time.time() - start_build))
