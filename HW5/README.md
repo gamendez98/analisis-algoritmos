@@ -109,7 +109,7 @@ For experimentation, `generate_sequence.py` and `query_generator.py` where used.
 Then, based on said files, `query_generator.py` was used to create queries composed of 1k, 10k, 100k and 1M of requests. Given the nature of `query_generator.py`, each and every single one
 of the requests appears at least once in the file.
 
-Having created the test files, tests were done to check the runtime of each case. Said results may be found in `results_suffixes.xlsx`
-
+Having created the test files, tests were done to check the runtime of each case. Said results may be found in `results_suffixes.xlsx`. 
+Due to time constraints, we were unable to complete some of the data, but we were able to take most of the samples.
 
 
