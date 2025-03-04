@@ -35,12 +35,31 @@ Example:
 ```bash
 python suffixes_no_prints.py text.txt queries.txt results.txt
 ```
+where text.txt may be
+```
+ACCACAGC
+GGATCACCATTTGT
+CGGGGC
+CGAACGAGAA
+TCCTGTTCGGACCCT
+CCCTTCAGGGGAGATGCGGTCC
+```
+and queries.txt may be
+```
+GG
+ACT
+XYZ
+AACGAGAA
+```
+with an expected outcome in results.txt like the following  
+```
 
+```
 ---
 
 ### 2. `query_generator.py`
 
-Generates a specified number of random query strings from a given text file.
+Generates a specified number of random query strings from a given text file. Said queries are extracted from the fil itself.
 
 #### **Inputs**
 - `filepath` (str, required): Path to the input text file.
@@ -62,7 +81,7 @@ python query_generator.py text.txt 1000
 
 ### 3. `generate_sequence.py`
 
-Generates a random sequence of characters of a specified length to use as input text.
+Generates a random DNA sequence of characters of a specified length to use as input text. In this case, we take into account length as length in characters.
 
 #### **Inputs**
 - `length` (int, required): Length of the sequence to generate.
@@ -77,10 +96,17 @@ python generate_sequence.py <length> <output_file>
 ```
 Example:
 ```bash
-python generate_sequence.py 1000000 text.txt
+python generate_sequence.py 100000 text.txt
 ```
 
 ## Experimentation
+
+
+For experimentation, `generate_sequence.py` and `query_generator.py` where used. In particular, `generate_sequence.py` was used to create files of 100k, 1M and 10M characters. 
+Then, based on said files, `query_generator.py` was used to create queries composed of 1k, 10k, 100k and 1M of requests. Given the nature of `query_generator.py`, each and every single one
+of the requests appears at least once in the file.
+
+Having created the test files, tests were done to check the runtime of each case. Said results may be found in `results_suffixes.xlsx`
 
 
 
