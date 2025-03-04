@@ -53,7 +53,10 @@ AACGAGAA
 ```
 with an expected outcome in results.txt like the following  
 ```
-
+GG	46	62	8	25	61	24	60	23	70
+ACT	
+XYZ	
+AACGAGAA	30
 ```
 ---
 
