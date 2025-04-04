@@ -1,18 +1,56 @@
-import sys
 import random
+import sys
 import time
 from collections import defaultdict
-import networkx as nx
-from itertools import combinations
 from copy import deepcopy
+
+import networkx as nx
 import pandas as pd
+
+
+# For doing insertion and deletion in O(1)
+class RandomizedSet:
+
+    def __init__(self):
+        self.lst = []
+        self.idx_map = {}
+
+
+    def add(self, val):
+        if val in self:
+            return False
+
+        self.lst.append(val)
+        self.idx_map[val] = len(self.lst) - 1
+        return True
+
+    def remove(self, val):
+        if val not in self:
+            return False
+
+        idx = self.idx_map[val]
+        self.lst[idx] = self.lst[-1]
+        self.idx_map[self.lst[-1]] = idx
+        self.lst.pop()
+        del self.idx_map[val]
+        return True
+
+    def get_random(self):
+        return random.choice(self.lst)
+
+    def __bool__(self):
+        return bool(self.lst)
+
+    def __contains__(self, val):
+        return val in self.idx_map
+
 
 class Graph:
     """Simple graph."""
     def __init__(self):
         self.adjacencies = defaultdict(set)
         self.vertices = set()
-        self.edges = set()
+        self.edges = RandomizedSet()
 
     def add_edge(self, u, v):
         """Adds an edge between vertices u and v, avoiding self-loops and duplicates."""
@@ -27,15 +65,18 @@ class Graph:
 
     def remove_edges_with_vertex(self, vertex):
         """Removes all edges connected to the given vertex."""
-        self.edges = {edge for edge in self.edges if vertex not in edge}
+        for neighbor in self.adjacencies.pop(vertex):
+            edge = tuple(sorted((vertex, neighbor)))
+            self.edges.remove(edge)
+            self.adjacencies[neighbor].remove(vertex)
 
     def get_random_edge(self):
         """Returns a random edge from the graph, or None if empty."""
-        return random.choice(list(self.edges)) if self.edges else None
+        return self.edges.get_random() if self.edges.lst else None
 
     def degree(self, u):
         """Returns the degree of vertex u."""
-        return len(self.adjacencies[u])
+        return len(self.adjacencies.get(u, []))
 
     def __repr__(self):
         """Returns a string representation of the graph."""
@@ -58,68 +99,58 @@ def read_graph(filename):
 def algorithm_1(graph):
     """Randomly selects an edge, includes both vertices, and removes all connected edges."""
     graph = deepcopy(graph)
-    edges = list(graph.edges)
     cover = set()
     
-    while edges:
-        u, v = random.choice(edges)
+    while graph.edges:
+        u, v = graph.get_random_edge()
         cover.update({u, v})
         graph.remove_edges_with_vertex(u)
         graph.remove_edges_with_vertex(v)
-        edges = list(graph.edges)
     
     return cover
 
 def algorithm_2(graph):
     """Selects the vertex with the highest degree, removes its edges, and repeats."""
     graph = deepcopy(graph)
-    edges = list(graph.edges)
     cover = set()
-    degrees = {v: graph.degree(v) for v in graph.vertices}
     
-    while edges:
-        max_vertex = max(degrees, key=degrees.get)
+    while graph.edges:
+        max_vertex = max(graph.adjacencies, key=graph.degree)
         cover.add(max_vertex)
         graph.remove_edges_with_vertex(max_vertex)
-        edges = list(graph.edges)
-        del degrees[max_vertex]
     
     return cover
 
 def algorithm_3(graph):
     """Randomly selects an edge, picks the vertex with the highest degree, and removes its edges."""
     graph = deepcopy(graph)
-    edges = list(graph.edges)
     cover = set()
     
-    while edges:
-        u, v = random.choice(edges)
+    while graph.edges:
+        u, v = graph.get_random_edge()
         chosen_vertex = u if graph.degree(u) >= graph.degree(v) else v
         cover.add(chosen_vertex)
         graph.remove_edges_with_vertex(chosen_vertex)
-        edges = list(graph.edges)
     
     return cover
 
 def algorithm_4(graph):
     """Randomly selects an edge, picks a random vertex from it, and removes its edges."""
     graph = deepcopy(graph)
-    edges = list(graph.edges)
     cover = set()
     
-    while edges:
-        u, v = random.choice(edges)
+    while graph.edges:
+        u, v = graph.get_random_edge()
         chosen_vertex = random.choice([u, v])
         cover.add(chosen_vertex)
         graph.remove_edges_with_vertex(chosen_vertex)
-        edges = list(graph.edges)
     
     return cover
 
 def experiment(repetitions=5):
     """Runs experiments on graphs of different sizes and densities, averaging over multiple runs."""
     results = []
-    sizes = [100, 1000] ## Missing the 10.000 case 
+    sizes = [100, 1000, 10000] ## Missing the 10.000 case
     densities = [0.01, 0.05, 0.1]
     
     for size in sizes:
