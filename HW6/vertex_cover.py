@@ -7,19 +7,15 @@ from copy import deepcopy
 import networkx as nx
 import pandas as pd
 
-
 # For doing insertion and deletion in O(1)
 class RandomizedSet:
-
     def __init__(self):
         self.lst = []
         self.idx_map = {}
 
-
     def add(self, val):
         if val in self:
             return False
-
         self.lst.append(val)
         self.idx_map[val] = len(self.lst) - 1
         return True
@@ -27,7 +23,6 @@ class RandomizedSet:
     def remove(self, val):
         if val not in self:
             return False
-
         idx = self.idx_map[val]
         self.lst[idx] = self.lst[-1]
         self.idx_map[self.lst[-1]] = idx
@@ -43,7 +38,6 @@ class RandomizedSet:
 
     def __contains__(self, val):
         return val in self.idx_map
-
 
 class Graph:
     """Simple graph."""
@@ -65,7 +59,7 @@ class Graph:
 
     def remove_edges_with_vertex(self, vertex):
         """Removes all edges connected to the given vertex."""
-        for neighbor in self.adjacencies.pop(vertex):
+        for neighbor in self.adjacencies.pop(vertex, set()):
             edge = tuple(sorted((vertex, neighbor)))
             self.edges.remove(edge)
             self.adjacencies[neighbor].remove(vertex)
@@ -79,9 +73,8 @@ class Graph:
         return len(self.adjacencies.get(u, []))
 
     def __repr__(self):
-        """Returns a string representation of the graph."""
         vertices_str = ', '.join(map(str, sorted(self.vertices)))
-        edges_str = '\n'.join([f'{u} - {v}' for u, v in sorted(self.edges)])
+        edges_str = '\n'.join([f'{u} - {v}' for u, v in sorted(self.edges.lst)])
         return f'Graph(Vertices: [{vertices_str}], Edges:\n{edges_str})'
 
 def read_graph(filename):
@@ -92,8 +85,11 @@ def read_graph(filename):
             parts = line.strip().split()
             if len(parts) != 2:
                 continue
-            u, v = map(int, parts)
-            graph.add_edge(u, v)
+            try:
+                u, v = map(int, parts)
+                graph.add_edge(u, v)
+            except ValueError:
+                continue
     return graph
 
 def algorithm_1(graph):
@@ -150,7 +146,7 @@ def algorithm_4(graph):
 def experiment(repetitions=5):
     """Runs experiments on graphs of different sizes and densities, averaging over multiple runs."""
     results = []
-    sizes = [100, 1000, 10000] ## Missing the 10.000 case
+    sizes = [100, 1000, 10000]
     densities = [0.01, 0.05, 0.1]
     
     for size in sizes:
@@ -188,7 +184,7 @@ def main():
         return
     
     if len(sys.argv) != 3:
-        print("Usage: python vertex_cover.py filename.txt algorithm_number (1-4) or 'optimal'")
+        print("Usage: python vertex_cover.py filename.txt algorithm_number (1-4)")
         sys.exit(1)
     
     archivo = sys.argv[1]
@@ -200,7 +196,7 @@ def main():
         if algoritmo not in {1, 2, 3, 4}:
             raise ValueError
     except ValueError:
-        print("Invalid algorithm number. Must be 1, 2, 3, 4, or 'optimal'.")
+        print("Invalid algorithm number. Must be 1, 2, 3, or 4.")
         sys.exit(1)
     
     algoritmos = {1: algorithm_1, 2: algorithm_2, 3: algorithm_3, 4: algorithm_4}
