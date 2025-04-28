@@ -63,7 +63,7 @@ class GameTheoreticCommunityDetection:
         self.next_label = max(partition.values()) + 1 if partition else 0
         return partition
 
-    def calculate_node_utility(self, node, community, partition):
+    def calculate_node_utility(self, node, community, partition, community_sizes):
         """
         Calculate utility for a node in a specific community, using edge weights.
 
@@ -85,13 +85,21 @@ class GameTheoreticCommunityDetection:
             else:
                 external_edge_weights += weight
 
-        comm_size = sum(1 for n, c in partition.items() if c == community and n != node)
+        # comm_size = sum(1 for n, c in partition.items() if c == community and n != node)
+        comm_size = community_sizes[community] - (partition.get(node) == community)
         utility = (self.internal_weight * internal_edge_weights -
                    self.external_penalty * external_edge_weights -
                    self.size_penalty * comm_size)
         return utility
 
-    def find_best_community(self, node, partition):
+    @staticmethod
+    def community_sizes_from_partition(partition):
+        comm_sizes = defaultdict(int)
+        for node, comm_id in partition.items():
+            comm_sizes[comm_id] += 1
+        return comm_sizes
+
+    def find_best_community(self, node, partition, community_sizes):
         """
         Find the community that maximizes a node's utility, including option to form a singleton.
 
@@ -103,7 +111,7 @@ class GameTheoreticCommunityDetection:
             tuple: (best community ID or 'new', utility)
         """
         current_community = partition.get(node)
-        current_utility = self.calculate_node_utility(node, current_community, partition)
+        current_utility = self.calculate_node_utility(node, current_community, partition, community_sizes)
         best_utility = current_utility
         best_community = current_community
 
@@ -114,7 +122,7 @@ class GameTheoreticCommunityDetection:
 
         for comm in candidate_communities:
             if comm != current_community:
-                utility = self.calculate_node_utility(node, comm, partition)
+                utility = self.calculate_node_utility(node, comm, partition, community_sizes)
                 if utility > best_utility:
                     best_utility = utility
                     best_community = comm
@@ -159,7 +167,7 @@ class GameTheoreticCommunityDetection:
 
         return new_partition, did_split
 
-    def merge_small_communities(self, partition, min_size=3):
+    def merge_small_communities(self, partition, community_sizes, min_size=3):
         """
         Merge communities smaller than min_size into the best neighboring community.
 
@@ -192,7 +200,7 @@ class GameTheoreticCommunityDetection:
                 for target_comm in neighbor_comms:
                     total_utility = 0
                     for node in nodes:
-                        total_utility += self.calculate_node_utility(node, target_comm, partition)
+                        total_utility += self.calculate_node_utility(node, target_comm, partition, community_sizes)
                     if total_utility > best_utility:
                         best_utility = total_utility
                         best_comm = target_comm
@@ -218,26 +226,35 @@ class GameTheoreticCommunityDetection:
         iteration = 0
         changes = True
 
+        community_sizes = self.community_sizes_from_partition(partition)
+
         while changes and iteration < self.max_iterations:
             changes = False
             nodes = list(self.G.nodes())
             random.shuffle(nodes)
 
             for node in nodes:
-                best_community, _ = self.find_best_community(node, partition)
+                best_community, _ = self.find_best_community(node, partition, community_sizes)
                 current_community = partition.get(node)
 
                 if best_community != current_community:
+                    community_sizes[current_community] -= 1
                     if best_community == "new":
                         new_label = self.next_label
                         partition[node] = new_label
+                        community_sizes[new_label] = 1
                         self.next_label += 1
                     else:
+                        community_sizes[best_community] += 1
                         partition[node] = best_community
                     changes = True
 
             partition, did_force = self.force_split(partition)
-            partition, did_merge = self.merge_small_communities(partition, min_size=3)
+            if did_force:
+                community_sizes = self.community_sizes_from_partition(partition)
+            partition, did_merge = self.merge_small_communities(partition, community_sizes, min_size=3)
+            if did_merge:
+                community_sizes = self.community_sizes_from_partition(partition)
 
             iteration += 1
             # print(f"Iteration {iteration}: {self.count_communities(partition)} communities")
@@ -506,7 +523,7 @@ def graph_run_time():
     sns.lineplot(x=ns, y=run_times)
     sns.lineplot(x=es, y=run_times)
     df = pd.DataFrame({'n': ns, 'e': es, 'run_time': run_times})
-    df.to_csv('run_times.csv', index=False)
+    df.to_csv('run_times2.csv', index=False)
     plt.show()
 
 
@@ -524,22 +541,22 @@ def graph_run_time_watts():
     sns.lineplot(x=ns, y=run_times)
     sns.lineplot(x=es, y=run_times)
     df = pd.DataFrame({'n': ns, 'e': es, 'run_time': run_times})
-    df.to_csv('run_times_watts.csv', index=False)
+    df.to_csv('run_times_watts2.csv', index=False)
     plt.show()
 
 
 def graph_run_time_max_iter():
     max_iters = []
     run_times = []
-    for i in tqdm(range(1, 20)):
+    for i in tqdm(range(1, 300)):
         G, run_time = test_run_time_watts(4000, 10, 0.1, max_iter=i)
         run_times.append(run_time)
         max_iters.append(i)
-        print(f"l={10}, k={i}, run_time={run_time}")
     sns.scatterplot(x=max_iters, y=run_times)
     df = pd.DataFrame({'max_iters': max_iters, 'run_time': run_times})
-    df.to_csv('run_times_max_iter.csv', index=False)
+    df.to_csv('run_times_max_iter2.csv', index=False)
     plt.show()
+
 
 def test_iterations_needed_watts(n, k, p):
     G = nx.connected_watts_strogatz_graph(n, k, p)
@@ -551,16 +568,17 @@ def test_iterations_needed_watts(n, k, p):
     run_time = end_time - start_time
     return G, iterations
 
+
 def graph_iterations_needed_watts():
     ns = []
     needed_iterations = []
-    for i in tqdm(range(1, 200)):
+    for i in tqdm(range(1, 300)):
         G, iterations = test_iterations_needed_watts(i * 10, 10, 0.1)
         needed_iterations.append(iterations)
         ns.append(G.number_of_nodes())
     sns.scatterplot(x=ns, y=needed_iterations)
     df = pd.DataFrame({'N': ns, 'needed_iter': needed_iterations})
-    df.to_csv('run_times_needed_iter.csv', index=False)
+    df.to_csv('run_times_needed_iter2.csv', index=False)
     plt.show()
 
 
@@ -584,12 +602,14 @@ def plot_caveman_n_watts():
     plt.show()
 
 
-
 # small world graphs
 # connected_caveman_graph
 
 
 if __name__ == "__main__":
-    plot_caveman_n_watts()
-
+    #graph_run_time()
+    #graph_run_time_watts()
+    graph_iterations_needed_watts()
+    #graph_run_time_max_iter()
+    #plot_caveman_n_watts()
 
