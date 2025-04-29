@@ -12,6 +12,8 @@ from tqdm import tqdm
 from matplotlib import pyplot as plt
 from sklearn.metrics import normalized_mutual_info_score, adjusted_rand_score
 
+from Project.infomap_nx_adapter import nx_infomap_partition
+
 
 class GameTheoreticCommunityDetection:
     """
@@ -71,6 +73,7 @@ class GameTheoreticCommunityDetection:
             node: The node to evaluate
             community: Target community ID
             partition: Current node->community mapping
+            community_sizes: Pre computed community sizes
 
         Returns:
             float: Utility score
@@ -106,6 +109,7 @@ class GameTheoreticCommunityDetection:
         Parameters:
             node: Node to evaluate
             partition: Current partition
+            community_sizes: Pre computed community sizes
 
         Returns:
             tuple: (best community ID or 'new', utility)
@@ -174,6 +178,8 @@ class GameTheoreticCommunityDetection:
         Parameters:
             partition: Current node->community mapping
             min_size: Minimum allowed community size
+            community_sizes: Pre computed community sizes
+
 
         Returns:
             dict: Updated partition
@@ -342,7 +348,9 @@ class GameTheoreticCommunityDetection:
 
         return metrics
 
-    def visualize(self, with_labels=True, figsize=(12, 8), node_labels=None, ground_truth=None):
+    def visualize(self, with_labels=True, figsize=(12, 8), node_labels=None,
+                  ground_truth=None,
+                  ground_truth_title=None):
         """
         Visualize the graph with communities colored differently, optionally showing ground truth.
 
@@ -351,6 +359,7 @@ class GameTheoreticCommunityDetection:
             figsize (tuple): Figure size
             node_labels (dict): Optional mapping of node_id -> label
             ground_truth (dict): Optional ground truth partition for comparison
+            ground_truth_title (str): Optional title for ground truth visualization
         """
         if self.partition is None:
             raise ValueError("Run the algorithm first")
@@ -389,7 +398,7 @@ class GameTheoreticCommunityDetection:
             if with_labels:
                 nx.draw_networkx_labels(self.G, pos, labels=node_labels, font_size=10, ax=ax[1])
 
-            ax[1].set_title("Ground Truth Communities")
+            ax[1].set_title(ground_truth_title or "Ground Truth Communities")
             ax[1].legend(loc="upper right")
             ax[1].axis('off')
 
@@ -582,34 +591,29 @@ def graph_iterations_needed_watts():
     plt.show()
 
 
+def compare_infomap_gt(G):
+    detector = GameTheoreticCommunityDetection(G)
+    detector.run(init_method="singleton")
+    im_partition = nx_infomap_partition(G)
+    detector.visualize(ground_truth=im_partition, ground_truth_title="Infomap")
+
+
 def plot_caveman_n_watts():
     G = nx.connected_caveman_graph(10, 10)
     set_all_edge_weights(G, 0.1, 1.0)
-    detector = GameTheoreticCommunityDetection(G)
-    detector.run(init_method="singleton")
-    detector.visualize()
+    compare_infomap_gt(G)
     G = nx.connected_watts_strogatz_graph(100, 10, 0.1)
-    set_all_edge_weights(G, 0.1, 1.0)
-    detector = GameTheoreticCommunityDetection(G)
-    detector.run(init_method="singleton")
-    detector.visualize()
+    compare_infomap_gt(G)
     G = nx.barbell_graph(20, 0)
     set_all_edge_weights(G, 0.1, 1.0)
     G[19][20]['weight'] = 100
-    detector = GameTheoreticCommunityDetection(G)
-    detector.run(init_method="singleton")
-    detector.visualize()
+    compare_infomap_gt(G)
     plt.show()
 
 
-# small world graphs
-# connected_caveman_graph
-
-
 if __name__ == "__main__":
-    #graph_run_time()
-    #graph_run_time_watts()
+    graph_run_time()
+    graph_run_time_watts()
     graph_iterations_needed_watts()
-    #graph_run_time_max_iter()
-    #plot_caveman_n_watts()
-
+    graph_run_time_max_iter()
+    plot_caveman_n_watts()

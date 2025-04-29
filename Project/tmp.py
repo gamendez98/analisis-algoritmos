@@ -64,5 +64,5 @@ run_times_needed_iter['moving_avg'] = (
     .rolling(window=window_size, center=True)
     .mean()
 )
-sns.lineplot(data=run_times_needed_iter, x="N", y="moving_avg", color="red")
+#sns.lineplot(data=run_times_needed_iter, x="N", y="moving_avg", color="red")
 plt.show()
