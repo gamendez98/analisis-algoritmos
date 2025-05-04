@@ -8,6 +8,7 @@ import numpy as np
 import random
 import time
 
+from networkx import LFR_benchmark_graph
 from tqdm import tqdm
 from matplotlib import pyplot as plt
 from sklearn.metrics import normalized_mutual_info_score, adjusted_rand_score
@@ -611,9 +612,61 @@ def plot_caveman_n_watts():
     plt.show()
 
 
+def compare_metrics():
+    def community_from_g_lrf(glrf):
+        communities = []
+        for node in G_LRF.nodes().values():
+            community = node['community']
+            if community not in communities:
+                communities.append(community)
+        return {
+            node_id: community_id
+            for community_id, community in enumerate(communities)
+                for node_id in community
+        }
+
+    G_LRF = LFR_benchmark_graph(n=250, tau1=3, tau2=1.5, mu=0.1, average_degree=5, min_community=20, seed=42)
+    ground_truth = community_from_g_lrf(G_LRF)
+    detector = GameTheoreticCommunityDetection(G_LRF)
+    detector.run(init_method="singleton")
+    detector.visualize(ground_truth=ground_truth, ground_truth_title="LFR Benchmark")
+    plt.show()
+    metrics = detector.calculate_community_metrics(ground_truth=ground_truth)
+    print(metrics)
+
+    infomap_partition = nx_infomap_partition(G_LRF)
+    infomap_dummy_detector = GameTheoreticCommunityDetection(G_LRF)
+    infomap_dummy_detector.partition = infomap_partition
+    infomap_metrics = infomap_dummy_detector.calculate_community_metrics(ground_truth=ground_truth)
+    print(infomap_metrics)
+    infomap_dummy_detector.visualize(ground_truth=ground_truth, ground_truth_title="Infomap")
+    plt.show()
+
+    G = nx.karate_club_graph()
+    ground_truth = {node: 0 if G.nodes[node]['club'] == 'Mr. Hi' else 1 for node in G.nodes()}
+    detector = GameTheoreticCommunityDetection(G)
+    detector.run(init_method="singleton")
+    detector.visualize(ground_truth=ground_truth, ground_truth_title="LFR Benchmark")
+    plt.show()
+    metrics = detector.calculate_community_metrics(ground_truth=ground_truth)
+    print(metrics)
+
+    infomap_partition = nx_infomap_partition(G)
+    infomap_dummy_detector = GameTheoreticCommunityDetection(G)
+    infomap_dummy_detector.partition = infomap_partition
+    infomap_metrics = infomap_dummy_detector.calculate_community_metrics(ground_truth=ground_truth)
+    print(infomap_metrics)
+    infomap_dummy_detector.visualize(ground_truth=ground_truth, ground_truth_title="Infomap")
+    plt.show()
+
+
+    print(metrics)
+
+
 if __name__ == "__main__":
-    graph_run_time()
-    graph_run_time_watts()
-    graph_iterations_needed_watts()
-    graph_run_time_max_iter()
-    plot_caveman_n_watts()
+    # graph_run_time()
+    # graph_run_time_watts()
+    # graph_iterations_needed_watts()
+    # graph_run_time_max_iter()
+    # plot_caveman_n_watts()
+    compare_metrics()

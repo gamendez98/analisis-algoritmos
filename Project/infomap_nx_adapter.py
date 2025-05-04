@@ -28,7 +28,7 @@ def nx_infomap_partition(G : Graph):
         n, m = edge
         w = G.edges[edge].get('weight', 1)
         infomap.add_link(n, m, w)
-    infomap.run()
+    infomap.run(silent=True)
 
     infomap.run()
 
