@@ -1,7 +1,10 @@
+import networkx as nx
 from networkx import Graph
 
 from infomap import Infomap
-
+from tqdm import tqdm
+import random
+import time
 
 #%%
 
@@ -29,9 +32,6 @@ def nx_infomap_partition(G : Graph):
         w = G.edges[edge].get('weight', 1)
         infomap.add_link(n, m, w)
     infomap.run(silent=True)
-
-    infomap.run()
-
     partition = {}
     for node in infomap.tree:
         if node.is_leaf:
@@ -39,3 +39,40 @@ def nx_infomap_partition(G : Graph):
 
     return partition
 
+def set_all_edge_weights(G, low, high):
+    for u, v in G.edges():
+        G[u][v]['weight'] = random.uniform(low, high)
+
+
+def test_run_time_watts_infomap(n, k, p, max_iter=100):
+    G = nx.connected_watts_strogatz_graph(n, k, p)
+    set_all_edge_weights(G, 0.1, 1.0)
+    start_time = time.time()
+    _ = nx_infomap_partition(G)
+    end_time = time.time()
+    run_time = end_time - start_time
+    return G, run_time
+
+
+def graph_run_time_watts_infomap():
+    import seaborn as sns
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    run_times = []
+    ns = []
+    es = []
+    for i in tqdm(range(1, 1000)):
+        G, run_time = test_run_time_watts_infomap(i * 10, 10, 0.1)
+        run_times.append(run_time)
+        n = G.number_of_nodes()
+        e = G.number_of_edges()
+        es.append(e)
+        ns.append(n)
+    sns.scatterplot(x=ns, y=run_times)
+    df = pd.DataFrame({'n': ns, 'e': es, 'run_time': run_times})
+    df.to_csv('run_times_watts2_infomap.csv', index=False)
+    plt.show()
+
+
+if __name__ == "__main__":
+    graph_run_time_watts_infomap()

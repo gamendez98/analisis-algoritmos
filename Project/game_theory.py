@@ -615,7 +615,7 @@ def plot_caveman_n_watts():
 def compare_metrics():
     def community_from_g_lrf(glrf):
         communities = []
-        for node in G_LRF.nodes().values():
+        for node in glrf.nodes().values():
             community = node['community']
             if community not in communities:
                 communities.append(community)
@@ -664,9 +664,9 @@ def compare_metrics():
 
 
 if __name__ == "__main__":
-    # graph_run_time()
-    # graph_run_time_watts()
-    # graph_iterations_needed_watts()
-    # graph_run_time_max_iter()
-    # plot_caveman_n_watts()
+    graph_run_time()
+    graph_run_time_watts()
+    graph_iterations_needed_watts()
+    graph_run_time_max_iter()
+    plot_caveman_n_watts()
     compare_metrics()
