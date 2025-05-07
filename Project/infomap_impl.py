@@ -119,7 +119,19 @@ class Infomap:
             for nbr, w in self.succ[n]:
                 if partition[nbr] != module_id:
                     ex += p[n] * (1 - self.teleportation) * (w / w_out)
-        return pm, ex
+        tot = pm + ex
+        module_L = 0
+        if tot != 0:
+            Hm = 0.0
+            if ex:
+                pe = ex / tot
+                Hm -= pe * math.log2(pe)
+            inv_tot = 1.0 / tot
+            for n in nodes:
+                pn = p[n] * inv_tot
+                Hm -= pn * math.log2(pn)
+            module_L = tot * Hm
+        return pm, ex, module_L
 
     def set_modules(self, partition):
         self.modules = {}
@@ -140,17 +152,11 @@ class Infomap:
         # Group nodes by module
         log2 = math.log2
 
-        # 1) group nodes
-        modules = {}
-        for n in self.nodes:  # no .items() overhead
-            modules.setdefault(partition[n], []).append(n)
 
         # 2) aggregate per‑module stats
-        p_module = {}
         exit_prob = {}
-        for m, nodes in modules.items():
-            pm, ex = self.get_module_entropy_info(m, nodes, partition, p)
-            p_module[m] = pm
+        for m, nodes in self.modules.items():
+            _, ex, _ = self.get_module_entropy_info(m, nodes, partition, p)
             exit_prob[m] = ex
 
         q_exit = sum(exit_prob.values())
@@ -166,20 +172,9 @@ class Infomap:
 
         # 4) within‑module contribution
         L_within = 0.0
-        for m, nodes in modules.items():
-            pm, ex = p_module[m], exit_prob[m]
-            tot = pm + ex
-            if tot == 0:
-                continue
-            Hm = 0.0
-            if ex:
-                pe = ex / tot
-                Hm -= pe * log2(pe)
-            inv_tot = 1.0 / tot
-            for n in nodes:
-                pn = p[n] * inv_tot
-                Hm -= pn * log2(pn)
-            L_within += tot * Hm
+        for m, nodes in self.modules.items():
+            pm, ex, ml = self.get_module_entropy_info(m, nodes, partition, p)
+            L_within += ml
 
         return q_exit * H_exit + L_within
 

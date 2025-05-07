@@ -118,7 +118,7 @@ def main():
     info = []
     get_gt_partition = lambda test_graph: GameTheoreticCommunityDetection(test_graph).run()[0]
     get_native_infomap_partition = lambda test_graph: Infomap(nx.DiGraph(test_graph)).run()[0]
-    for graph_file in tqdm(os.listdir('test2')):
+    for graph_file in tqdm(os.listdir('test_graphs')):
         with open(f'test_graphs/{graph_file}', 'rb') as f:
             graph = pickle.load(f)
         graph_size = graph.number_of_nodes()
@@ -138,8 +138,6 @@ def main():
         info.append(gt_info)
         info.append(infomap_info)
         info.append(infomap_native_info)
-
-        break
 
     df = pd.DataFrame(info)
     df.to_csv('benchmark_results_3.csv', index=False)
