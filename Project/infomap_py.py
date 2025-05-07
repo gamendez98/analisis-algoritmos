@@ -136,14 +136,14 @@ def display_partition(partition):
     plt.show()
 
 if __name__ == "__main__":
-    with open('test_graphs/benchmark_graph_500_2.pkl', 'rb') as f:
+    with open('test2/benchmark_graph_250_3.pkl', 'rb') as f:
         G = pickle.load(f)
-    #G = nx.connected_caveman_graph(10, 10)
+    G = nx.connected_caveman_graph(10, 10)
     g = GameTheoreticCommunityDetection(G)
     # comms = infomap_basic(G)
     # display_partition(comms)
-    # part = nx_infomap_partition(G)
-    # display_partition(part)
+    #part = nx_infomap_partition(G)
+    #display_partition(part)
     start = time.time()
     part = Infomap(nx.DiGraph(G)).run()[0]
     end = time.time()

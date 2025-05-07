@@ -44,6 +44,8 @@ class Infomap:
             u: [(v, d.get('weight', 1)) for _, v, d in G.out_edges(u, data=True)]
             for u in self.nodes
         }
+        self.modules = {}
+        self.cached_get_module_entropy_info = {}
 
     def compute_stationary_distribution(self):
         """
@@ -65,7 +67,7 @@ class Infomap:
             # For each node, distribute its probability mass along its outgoing edges.
             for node in self.G.nodes():
                 # Get all outgoing edges from node along with their weight.
-                out_edges = list(self.G.out_edges(node, data=True))
+                out_edges = self.succ[node]
                 if not out_edges:
                     # Dangling node: no outlinks. Distribute its (follow) probability uniformly.
                     contribution = (1 - self.teleportation) * p[node] / N
@@ -73,9 +75,8 @@ class Infomap:
                         new_p[dest] += contribution
                 else:
                     # Total weight of node's out-going links.
-                    total_w = sum(data.get('weight', 1) for (_, _, data) in out_edges)
-                    for (_, neighbor, data) in out_edges:
-                        weight = data.get('weight', 1)
+                    total_w = sum(weight for neighbor, weight in out_edges)
+                    for neighbor, weight in out_edges:
                         new_p[neighbor] += (1 - self.teleportation) * p[node] * (weight / total_w)
 
             # Check convergence (L1 norm of difference)
@@ -87,6 +88,43 @@ class Infomap:
         sum_p = sum(p.values())
         assert abs(sum_p - 1.0) < 1e-6, f"Stationary dist not normalized: sum={sum_p}"
         return p
+
+    def update_module(self, partition, node, module_id):
+        old_module = partition[node]
+        partition[node] = module_id
+        self.invalidate_cached_get_module_entropy_info(old_module)
+        self.invalidate_cached_get_module_entropy_info(module_id)
+        self.modules[module_id].add(node)
+        self.modules.setdefault(old_module, set()).discard(node)
+        return partition
+
+    def invalidate_cached_get_module_entropy_info(self, module_id):
+        self.cached_get_module_entropy_info.pop(module_id, None)
+
+    def get_module_entropy_info(self, module_id, nodes, partition, p):
+        cached_info = self.cached_get_module_entropy_info.get(module_id, None)
+        if cached_info is not None:
+            return cached_info
+        info = self.compute_module_entropy_info(module_id, nodes, partition, p)
+        self.cached_get_module_entropy_info[module_id] = info
+        return info
+
+    def compute_module_entropy_info(self, module_id, nodes, partition, p):
+        pm = sum(p[n] for n in nodes)
+        ex = 0.0
+        for n in nodes:
+            w_out = self.out_w[n]
+            if w_out == 0:
+                continue
+            for nbr, w in self.succ[n]:
+                if partition[nbr] != module_id:
+                    ex += p[n] * (1 - self.teleportation) * (w / w_out)
+        return pm, ex
+
+    def set_modules(self, partition):
+        self.modules = {}
+        for n in self.nodes:  # no .items() overhead
+            self.modules.setdefault(partition[n], set()).add(n)
 
     def compute_map_equation(self, partition, p):
         """
@@ -100,8 +138,6 @@ class Infomap:
         Complexity: O(N + E)
         """
         # Group nodes by module
-        out_w, succ = self.out_w, self.succ
-        teleport = self.teleportation
         log2 = math.log2
 
         # 1) group nodes
@@ -113,15 +149,7 @@ class Infomap:
         p_module = {}
         exit_prob = {}
         for m, nodes in modules.items():
-            pm = sum(p[n] for n in nodes)
-            ex = 0.0
-            for n in nodes:
-                w_out = out_w[n]
-                if w_out == 0:
-                    continue
-                for nbr, w in succ[n]:
-                    if partition[nbr] != m:
-                        ex += p[n] * (1 - teleport) * (w / w_out)
+            pm, ex = self.get_module_entropy_info(m, nodes, partition, p)
             p_module[m] = pm
             exit_prob[m] = ex
 
@@ -168,6 +196,7 @@ class Infomap:
         """
         # Initialize partition: each node in its own module.
         partition = {n: n for n in self.G.nodes()}
+        self.set_modules(partition)
         # Compute the initial description length.
         current_L = self.compute_map_equation(partition, p)
 
@@ -180,8 +209,8 @@ class Infomap:
             random.shuffle(nodes)  # Process nodes in random order to reduce bias.
             for node in nodes:
                 current_module = partition[node]
-                candidates = {partition[v] for _, v in self.G.out_edges(node)} | {partition[u] for u, _ in
-                                                                                  self.G.in_edges(node)}
+                candidates = {partition[v] for v, _ in self.succ[node]} | {partition[u] for u, _ in
+                                                                           self.G.in_edges(node)}
                 candidates.add(current_module)
 
                 best_L = current_L
@@ -190,14 +219,14 @@ class Infomap:
                     if module == current_module:
                         continue
                     old_module = partition[node]
-                    partition[node] = module
+                    partition = self.update_module(partition, node, module)
                     new_L = self.compute_map_equation(partition, p)
                     if new_L < best_L:
                         best_L = new_L
                         best_module = module
-                    partition[node] = old_module
+                    partition = self.update_module(partition, node, old_module)
                 if best_module != current_module:
-                    partition[node] = best_module
+                    partition = self.update_module(partition, node, best_module)
                     current_L = best_L
                     improvement = True
 
@@ -228,7 +257,7 @@ class Infomap:
                     backup = partition.copy()
                     for n, m in backup.items():
                         if m == m2:
-                            partition[n] = m1
+                            partition = self.update_module(partition, n, m1)
                     new_L = self.compute_map_equation(partition, p)
                     delta = curr_L - new_L
                     # Revert the temporary merge
@@ -240,7 +269,7 @@ class Infomap:
                 m1, m2 = best_pair
                 for n, m in partition.items():
                     if m == m2:
-                        partition[n] = m1
+                        partition = self.update_module(partition, n, m1)
                 improved = True
         return partition
 
