@@ -1,5 +1,7 @@
 import math
 import random
+from functools import lru_cache
+
 
 class Infomap:
     """
@@ -18,6 +20,7 @@ class Infomap:
       - merge_modules: O(modules^2 * (N + E)) per full merge phase
       - run (full pipeline): dominated by greedy & merge steps: O(max_iter * N * (N + E) + modules^2 * (N + E))
     """
+
     def __init__(self, G, teleportation=0.15, max_iter=100, tol=1e-8):
         """
         Initializes the Infomap instance.
@@ -32,6 +35,15 @@ class Infomap:
         self.teleportation = teleportation
         self.max_iter = max_iter
         self.tol = tol
+        self.nodes = list(G.nodes())
+        self.out_w = {
+            u: sum(d.get('weight', 1) for _, _, d in G.out_edges(u, data=True))
+            for u in self.nodes
+        }
+        self.succ = {
+            u: [(v, d.get('weight', 1)) for _, v, d in G.out_edges(u, data=True)]
+            for u in self.nodes
+        }
 
     def compute_stationary_distribution(self):
         """
@@ -88,60 +100,60 @@ class Infomap:
         Complexity: O(N + E)
         """
         # Group nodes by module
+        out_w, succ = self.out_w, self.succ
+        teleport = self.teleportation
+        log2 = math.log2
+
+        # 1) group nodes
         modules = {}
-        for node, module in partition.items():
-            modules.setdefault(module, []).append(node)
+        for n in self.nodes:  # no .items() overhead
+            modules.setdefault(partition[n], []).append(n)
 
-        # Precompute out-weight
-        out_weight = {}
-        for node in self.G.nodes():
-            edges = list(self.G.out_edges(node, data=True))
-            out_weight[node] = sum(data.get('weight', 1) for (_, _, data) in edges) if edges else 0
+        # 2) aggregate per‑module stats
+        p_module = {}
+        exit_prob = {}
+        for m, nodes in modules.items():
+            pm = sum(p[n] for n in nodes)
+            ex = 0.0
+            for n in nodes:
+                w_out = out_w[n]
+                if w_out == 0:
+                    continue
+                for nbr, w in succ[n]:
+                    if partition[nbr] != m:
+                        ex += p[n] * (1 - teleport) * (w / w_out)
+            p_module[m] = pm
+            exit_prob[m] = ex
 
-        # For each module, compute the total node probability and the exit probability.
-        module_info = {}
-        for module, nodes in modules.items():
-            p_module = sum(p[n] for n in nodes)
-            exit_module = 0.0
-            # For each node in the module, add the probability that the random walker leaves the module.
-            for node in nodes:
-                if out_weight[node] > 0:
-                    for _, neighbor, data in self.G.out_edges(node, data=True):
-                        if partition[neighbor] != module:
-                            weight = data.get('weight', 1)
-                            exit_module += p[node] * (1 - self.teleportation) * (weight / out_weight[node])
-            module_info[module] = {'p_module': p_module, 'exit': exit_module, 'nodes': nodes}
+        q_exit = sum(exit_prob.values())
 
-        # Total exit probability (the inter-module flow) summed over all modules.
-        q_exit = sum(info['exit'] for info in module_info.values())
-
-        # Inter-module entropy
+        # 3) inter‑module entropy
         H_exit = 0.0
-        if q_exit > 0:
-            for info in module_info.values():
-                e = info['exit']
-                if e > 0:
-                    prob = e / q_exit
-                    H_exit -= prob * math.log(prob, 2)
+        if q_exit:
+            inv_q = 1.0 / q_exit
+            for ex in exit_prob.values():
+                if ex:  # skip zeros
+                    prob = ex * inv_q
+                    H_exit -= prob * log2(prob)
 
-        # Within-module contribution
+        # 4) within‑module contribution
         L_within = 0.0
-        for info in module_info.values():
-            total_flow = info['p_module'] + info['exit']
-            H_module = 0.0
-            if info['exit'] > 0:
-                prob_exit = info['exit'] / total_flow
-                H_module -= prob_exit * math.log(prob_exit, 2)
-            for node in info['nodes']:
-                if p[node] > 0:
-                    prob_node = p[node] / total_flow
-                    H_module -= prob_node * math.log(prob_node, 2)
-            L_within += total_flow * H_module
+        for m, nodes in modules.items():
+            pm, ex = p_module[m], exit_prob[m]
+            tot = pm + ex
+            if tot == 0:
+                continue
+            Hm = 0.0
+            if ex:
+                pe = ex / tot
+                Hm -= pe * log2(pe)
+            inv_tot = 1.0 / tot
+            for n in nodes:
+                pn = p[n] * inv_tot
+                Hm -= pn * log2(pn)
+            L_within += tot * Hm
 
-        assert abs(sum(info['p_module'] for info in module_info.values()) - 1.0) < 1e-6, \
-               "Conservation violated: sum of p_module != 1"
-        L_total = q_exit * H_exit + L_within
-        return L_total
+        return q_exit * H_exit + L_within
 
     def infomap_greedy(self, p):
         """
@@ -165,10 +177,11 @@ class Infomap:
             improvement = False
             it += 1
             nodes = list(self.G.nodes())
-            random.shuffle(nodes) # Process nodes in random order to reduce bias.
+            random.shuffle(nodes)  # Process nodes in random order to reduce bias.
             for node in nodes:
                 current_module = partition[node]
-                candidates = {partition[v] for _, v in self.G.out_edges(node)} | {partition[u] for u, _ in self.G.in_edges(node)}
+                candidates = {partition[v] for _, v in self.G.out_edges(node)} | {partition[u] for u, _ in
+                                                                                  self.G.in_edges(node)}
                 candidates.add(current_module)
 
                 best_L = current_L
@@ -209,7 +222,7 @@ class Infomap:
             best_delta = 0
             best_pair = None
             for i in range(len(modules)):
-                for j in range(i+1, len(modules)):
+                for j in range(i + 1, len(modules)):
                     m1, m2 = modules[i], modules[j]
                     # Temporarily merge m2 into m1
                     backup = partition.copy()
